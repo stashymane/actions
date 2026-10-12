@@ -1,0 +1,37 @@
+name: Get Version
+description: Outputs a version from the current run's tag, or a dated snapshot version.
+author: aesth
+
+inputs:
+  snapshot:
+    default: 'false'
+    description: When true, use the current UTC date (YYYYMMDD) instead of the run tag.
+  snapshot-suffix:
+    default: '-SNAPSHOT'
+    description: Appended to snapshot date versions (e.g. 20261012-SNAPSHOT).
+
+outputs:
+  version:
+    description: The computed version string.
+    value: ${{ steps.version.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [ "${{ inputs.snapshot }}" = "true" ]; then
+          version="$(date -u +%Y%m%d)${{ inputs.snapshot-suffix }}"
+        elif [ "${{ github.ref_type }}" = "tag" ]; then
+          version="${{ github.ref_name }}"
+        elif [ -n "${{ github.event.release.tag_name }}" ]; then
+          version="${{ github.event.release.tag_name }}"
+        else
+          echo "get-version: no tag ref for this run (ref=${{ github.ref }}). Set snapshot: true or run on a tag." >&2
+          exit 1
+        fi
+
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
