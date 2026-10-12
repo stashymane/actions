@@ -9,6 +9,11 @@ inputs:
   snapshot-suffix:
     default: '-SNAPSHOT'
     description: Appended to snapshot date versions (e.g. 20261012-SNAPSHOT).
+  snapshot-commit-suffix:
+    default: 'false'
+    description: |
+      When this and `snapshot` are true, insert the short run commit SHA after the date
+      (e.g. 20261012.a1b2c3d-SNAPSHOT).
 
 outputs:
   version:
@@ -24,7 +29,11 @@ runs:
         set -euo pipefail
 
         if [ "${{ inputs.snapshot }}" = "true" ]; then
-          version="$(date -u +%Y%m%d)${{ inputs.snapshot-suffix }}"
+          version="$(date -u +%Y%m%d)"
+          if [ "${{ inputs.snapshot-commit-suffix }}" = "true" ]; then
+            version="${version}.${GITHUB_SHA:0:7}"
+          fi
+          version="${version}${{ inputs.snapshot-suffix }}"
         elif [ "${{ github.ref_type }}" = "tag" ]; then
           version="${{ github.ref_name }}"
         elif [ -n "${{ github.event.release.tag_name }}" ]; then
